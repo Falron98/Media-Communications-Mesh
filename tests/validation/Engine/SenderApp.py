@@ -5,9 +5,9 @@
 import os
 
 
-def get_sender_default(app_path = f"{os.environ['build']}/tests/tools/sender_val") -> dict:
+def get_sender_default(app_path = "/home/gta/mtl/Media-Communications-Mesh/tests/tools/sender_val") -> dict:
     return {
-        "media_proxy_port": 9000,
+        "media_proxy_port": 9001,
         "app_path": app_path,
         "file_name": "input.yuv",
         "width": 1920,
@@ -15,9 +15,9 @@ def get_sender_default(app_path = f"{os.environ['build']}/tests/tools/sender_val
         "fps": 25,
         "pix_fmt": "yuv422p10le",
         "recv_ip": "192.168.2.1",
-        "recv_port": 8001,
+        "recv_port": 9002,
         "send_ip": "192.168.2.2",
-        "send_port": 8002,
+        "send_port": 9001,
         "protocol_type": "auto",
         "payload_type": "st20",
         "socketpath": "/run/mcm/mcm_rx_memif.sock",
@@ -27,7 +27,7 @@ def get_sender_default(app_path = f"{os.environ['build']}/tests/tools/sender_val
 
 
 def get_sender_cmd(config: dict) -> str:
-    return """MCM_MEDIA_PROXY_PORT={media_proxy_port} \
+    return """sudo MCM_MEDIA_PROXY_PORT={media_proxy_port} \
     {app_path} \
     -w {width} \
     -h {height} \
@@ -35,6 +35,19 @@ def get_sender_cmd(config: dict) -> str:
     -x {pix_fmt} \
     -s {send_ip} \
     -p {send_port} \
+    -r {recv_ip} \
+    -i {recv_port} \
+    -b {file_name}
+    """.format(**config)
+
+def get_sender_st20_cmd(config: dict) -> str:
+    return """sudo MCM_MEDIA_PROXY_PORT={media_proxy_port} \
+    {app_path} \
+    -w {width} \
+    -h {height} \
+    -f {fps} \
+    -x {pix_fmt} \
+    -s {send_ip} \
     -r {recv_ip} \
     -i {recv_port} \
     -b {file_name}
