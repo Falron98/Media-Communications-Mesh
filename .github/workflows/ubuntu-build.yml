@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
   workflow_dispatch:
 
 env:
@@ -18,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -80,10 +83,34 @@ jobs:
       run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
     - name: 'Build MCM SDK and Media Proxy'
-      run: ./build.sh
+      run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
 
-    - name: 'Build MCM FFmpeg plugin'
+    - name: 'Build FFmpeg 6.1 with MCM plugin'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
-        ./configure-ffmpeg.sh && \
-        ./build-ffmpeg.sh
+        ./configure-ffmpeg.sh "6.1" && \
+        ./build-ffmpeg.sh "6.1"
+
+    - name: 'Build FFmpeg 7.0 with MCM plugin'
+      working-directory: ${{ github.workspace }}/ffmpeg-plugin
+      run: |
+        ./configure-ffmpeg.sh "7.0" && \
+        ./build-ffmpeg.sh "7.0"
+
+    - name: 'Scanner: Send to VirusTotal for analysis'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: vt
+      uses: cssnr/virustotal-action@331c320c79202fdaa7a30f16163390f8d09c3f45 # v1.2.0
+      with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          file_globs: |
+            _build/mcm/lib/*.so*
+            _build/mcm/bin/*
+            _install/usr/local/sbin/*
+            _build/ffmpeg-6-1/ffmpeg
+            _build/ffmpeg-7-0/ffmpeg
+    - name: 'Scanner: Print scan results'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: vt-out
+      run: echo ${{ steps.vt.outputs.results }}
